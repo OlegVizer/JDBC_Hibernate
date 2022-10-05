@@ -21,9 +21,16 @@ public class Util {
         String bdURL ="jdbc:mysql://" + bdHost + ":" + bdPort + "/" + bdName;
         try {
             bdConnection = DriverManager.getConnection(bdURL, bdUser, bdPass);
+            System.out.println("2");
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        try {
+            bdConnection.setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
         return bdConnection;
     }
 }
