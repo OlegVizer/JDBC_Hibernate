@@ -1,10 +1,16 @@
 package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
-
+import jm.task.core.jdbc.util.Util;
+import org.hibernate.HibernateException;
+import org.hibernate.SessionFactory;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 
+
 public class UserDaoHibernateImpl implements UserDao {
+    private final SessionFactory sessionFactory = Util.getSession();
+
     public UserDaoHibernateImpl() {
 
     }
@@ -12,31 +18,117 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void createUsersTable() {
-
+        var session = sessionFactory.openSession();
+        try {
+            session.beginTransaction();
+            session.createNativeQuery("""
+                CREATE TABLE IF NOT EXISTS users 
+                (id BIGINT PRIMARY KEY AUTO_INCREMENT, 
+                name VARCHAR (10), 
+                 lastName VARCHAR (20), 
+                age TINYINT)
+                """
+            ).executeUpdate();
+            session.getTransaction().commit();
+            System.out.println("Таблица создана!");
+        }catch (HibernateException e) {
+            e.printStackTrace();
+            if(session != null)
+                session.beginTransaction().rollback();
+        }finally{
+            session.close();
+        }
     }
 
     @Override
     public void dropUsersTable() {
-
+        var session = sessionFactory.openSession();
+        try{
+            session.beginTransaction();
+            session.createNativeQuery("DROP TABLE IF EXISTS users").executeUpdate();
+            session.getTransaction().commit();
+            System.out.println("Таблица удалена");
+        }catch (HibernateException e) {
+            e.printStackTrace();
+            if(session != null)
+                session.beginTransaction().rollback();
+        }finally{
+            session.close();
+        }
     }
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
-
+        var session = sessionFactory.openSession();
+        try {
+            session.beginTransaction();
+            session.save(new User(name, lastName, age));
+            session.getTransaction().commit();
+            System.out.println("User сохранен");
+        } catch (HibernateException e) {
+            e.printStackTrace();
+            if (session != null) {
+                session.beginTransaction().rollback();
+            }
+        }finally {
+            session.close();
+        }
     }
 
     @Override
     public void removeUserById(long id) {
-
+        var session = sessionFactory.openSession();
+        try{
+            session.beginTransaction();
+            session.delete(session.get(User.class, id));
+            session.getTransaction().commit();
+            System.out.println("User удалён");
+        }catch (HibernateException e) {
+            e.printStackTrace();
+            if(session != null)
+                session.beginTransaction().rollback();
+        }finally{
+            session.close();
+        }
     }
 
     @Override
     public List<User> getAllUsers() {
-        return null;
+        List<User> userList = null;
+        var session = sessionFactory.openSession();
+        try {
+            CriteriaQuery<User> criteriaQuery = session.getCriteriaBuilder().createQuery(User.class);
+            criteriaQuery.from(User.class);
+            session.beginTransaction();
+            userList = session.createQuery(criteriaQuery).getResultList();
+            session.getTransaction().commit();
+            return userList;
+        } catch (HibernateException e) {
+            e.printStackTrace();
+            if (session != null) {
+                session.beginTransaction().rollback();
+            }
+        }finally {
+            session.close();
+        }
+        return userList;
     }
 
     @Override
     public void cleanUsersTable() {
-
+        var session = sessionFactory.openSession();
+        try {
+            session.beginTransaction();
+            session.createNativeQuery("TRUNCATE TABLE mybd.users;").executeUpdate();
+            session.getTransaction().commit();
+            System.out.println("Таблица очищена");
+        } catch (HibernateException e) {
+            e.printStackTrace();
+            if (session != null) {
+                session.beginTransaction().rollback();
+            }
+        }finally {
+            session.close();
+        }
     }
 }
